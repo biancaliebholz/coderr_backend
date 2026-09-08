@@ -4,11 +4,15 @@ from django.db import models
 
 
 class User(AbstractUser):
-    pass
+    """Represent a user who can authenticate with the Coderr API."""
 
 
 class Profile(models.Model):
+    """Store the role and additional public data of a Coderr user."""
+
     class UserType(models.TextChoices):
+        """Define the supported profile roles."""
+
         CUSTOMER = "customer", "Customer"
         BUSINESS = "business", "Business"
 
@@ -51,3 +55,7 @@ class Profile(models.Model):
         upload_to="profile_pictures/",
         blank=True,
     )
+
+    def __str__(self):
+        """Return a readable representation of the profile."""
+        return f"{self.user.username} ({self.get_type_display()})"
