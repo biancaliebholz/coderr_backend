@@ -4,6 +4,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.generics import (
     CreateAPIView,
     GenericAPIView,
+    ListAPIView,
     RetrieveUpdateAPIView,
 )
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -11,6 +12,8 @@ from rest_framework.response import Response
 
 from users_app.api.permissions import IsProfileOwnerOrReadOnly
 from users_app.api.serializers import (
+    BusinessProfileSerializer,
+    CustomerProfileSerializer,
     LoginSerializer,
     ProfileSerializer,
     RegistrationSerializer,
@@ -64,3 +67,25 @@ class ProfileDetailView(RetrieveUpdateAPIView):
     lookup_field = "user_id"
     lookup_url_kwarg = "pk"
     http_method_names = ["get", "patch", "head", "options"]
+
+
+class BusinessProfileListView(ListAPIView):
+    """List all business profiles."""
+
+    queryset = Profile.objects.filter(
+        type=Profile.UserType.BUSINESS,
+    ).select_related("user")
+    serializer_class = BusinessProfileSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "head", "options"]
+
+
+class CustomerProfileListView(ListAPIView):
+    """List all customer profiles."""
+
+    queryset = Profile.objects.filter(
+        type=Profile.UserType.CUSTOMER,
+    ).select_related("user")
+    serializer_class = CustomerProfileSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "head", "options"]

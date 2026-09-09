@@ -3,6 +3,7 @@ from django.contrib.auth.password_validation import (
     validate_password as validate_django_password,
 )
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 
@@ -126,7 +127,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         read_only=True,
     )
     type = serializers.CharField(read_only=True)
-    file = serializers.ImageField(read_only=True)
+    file = serializers.ImageField(required=False)
 
     class Meta:
         model = Profile
@@ -162,6 +163,8 @@ class ProfileSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         """Update profile fields and writable user fields together."""
         user_data = validated_data.pop("user", {})
+        if "file" in validated_data:
+            validated_data["uploaded_at"] = timezone.now()
         self._update_user(instance.user, user_data)
         return super().update(instance, validated_data)
 
@@ -171,3 +174,73 @@ class ProfileSerializer(serializers.ModelSerializer):
             setattr(user, field, value)
         if user_data:
             user.save(update_fields=list(user_data))
+
+
+class BusinessProfileSerializer(serializers.ModelSerializer):
+    """Serialize the documented business profile list fields."""
+
+    user = serializers.IntegerField(
+        source="user.id",
+        read_only=True,
+    )
+    username = serializers.CharField(
+        source="user.username",
+        read_only=True,
+    )
+    first_name = serializers.CharField(
+        source="user.first_name",
+        read_only=True,
+    )
+    last_name = serializers.CharField(
+        source="user.last_name",
+        read_only=True,
+    )
+
+    class Meta:
+        model = Profile
+        fields = [
+            "user",
+            "username",
+            "first_name",
+            "last_name",
+            "file",
+            "location",
+            "tel",
+            "description",
+            "working_hours",
+            "type",
+        ]
+
+
+class CustomerProfileSerializer(serializers.ModelSerializer):
+    """Serialize the documented customer profile list fields."""
+
+    user = serializers.IntegerField(
+        source="user.id",
+        read_only=True,
+    )
+    username = serializers.CharField(
+        source="user.username",
+        read_only=True,
+    )
+    first_name = serializers.CharField(
+        source="user.first_name",
+        read_only=True,
+    )
+    last_name = serializers.CharField(
+        source="user.last_name",
+        read_only=True,
+    )
+    uploaded_at = serializers.DateTimeField(read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = [
+            "user",
+            "username",
+            "first_name",
+            "last_name",
+            "file",
+            "uploaded_at",
+            "type",
+        ]

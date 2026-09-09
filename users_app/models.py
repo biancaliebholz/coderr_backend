@@ -56,6 +56,11 @@ class Profile(models.Model):
         blank=True,
     )
 
+    uploaded_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
     def __str__(self):
         """Return a readable representation of the profile."""
         return f"{self.user.username} ({self.get_type_display()})"
