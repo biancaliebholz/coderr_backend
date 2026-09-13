@@ -33,9 +33,7 @@ class OfferUpdateDeleteTests(APITestCase):
         self._create_detail(self.offer, "premium", 500)
         other_offer = self._create_offer(self.other_user, "Other Offer")
         self.foreign_detail = self._create_detail(
-            other_offer,
-            "basic",
-            80,
+            other_offer, "basic", 80
         )
         self.url = f"/api/offers/{self.offer.pk}/"
 
@@ -184,14 +182,8 @@ class OfferUpdateDeleteTests(APITestCase):
             {"details": [detail_data]},
         )
         self.foreign_detail.refresh_from_db()
-        self.assertEqual(
-            response.status_code,
-            status.HTTP_400_BAD_REQUEST,
-        )
-        self.assertNotEqual(
-            self.foreign_detail.title,
-            "Basic Design Updated",
-        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertNotEqual(self.foreign_detail.title, "Basic Design Updated")
 
     def test_updating_unknown_offer_returns_not_found(self):
         """Return 404 when the offer does not exist."""
