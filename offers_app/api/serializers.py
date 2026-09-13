@@ -139,6 +139,15 @@ class OfferDetailSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
 
+class OfferDetailUpdateSerializer(OfferDetailSerializer):
+    """Validate one existing package during an offer update."""
+
+    id = serializers.IntegerField()
+    offer_type = serializers.ChoiceField(
+        choices=OfferDetail.OfferType.choices,
+    )
+
+
 class OfferCreateSerializer(serializers.ModelSerializer):
     """Create an offer together with exactly three details."""
 
@@ -183,3 +192,62 @@ class OfferCreateSerializer(serializers.ModelSerializer):
         for detail_data in details_data:
             OfferDetail.objects.create(offer=offer, **detail_data)
         return offer
+
+
+class OfferUpdateSerializer(serializers.ModelSerializer):
+    """Update an offer and selected existing details."""
+
+    details = OfferDetailUpdateSerializer(
+        many=True,
+        required=False,
+    )
+    image = serializers.ImageField(
+        required=False,
+        allow_null=True,
+    )
+
+    class Meta:
+        model = Offer
+        fields = [
+            "id",
+            "title",
+            "image",
+            "description",
+            "details",
+        ]
+        read_only_fields = ["id"]
+
+    def validate_details(self, value):
+        """Require an ID and package type for every detail."""
+        required_fields = {"id", "offer_type"}
+        for detail_data in value:
+            if required_fields - detail_data.keys():
+                raise serializers.ValidationError(
+                    "Each detail requires an id and offer_type."
+                )
+        return value
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        """Update the offer and its supplied details atomically."""
+        details_data = validated_data.pop("details", [])
+        offer = super().update(instance, validated_data)
+        self._update_details(offer, details_data)
+        return offer
+
+    def _update_details(self, offer, details_data):
+        """Update each supplied detail separately."""
+        for detail_data in details_data:
+            self._update_detail(offer, detail_data)
+
+    def _update_detail(self, offer, detail_data):
+        """Update a detail belonging to the selected offer."""
+        detail_id = detail_data.pop("id")
+        detail = offer.details.filter(pk=detail_id).first()
+        if detail is None:
+            raise serializers.ValidationError(
+                {"details": "Detail does not belong to this offer."}
+            )
+        for field, value in detail_data.items():
+            setattr(detail, field, value)
+        detail.save()

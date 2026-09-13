@@ -9,12 +9,16 @@ from rest_framework.viewsets import ModelViewSet
 
 from offers_app.api.filters import OfferFilter
 from offers_app.api.pagination import OfferPagination
-from offers_app.api.permissions import IsBusinessUser
+from offers_app.api.permissions import (
+    IsBusinessUser,
+    IsOfferOwner,
+)
 from offers_app.api.serializers import (
     OfferCreateSerializer,
     OfferDetailSerializer,
     OfferListSerializer,
     OfferRetrieveSerializer,
+    OfferUpdateSerializer,
 )
 from offers_app.models import Offer, OfferDetail
 
@@ -45,7 +49,13 @@ class OfferViewSet(ModelViewSet):
     search_fields = ["title", "description"]
     ordering_fields = ["updated_at", "min_price"]
     ordering = ["-updated_at"]
-    http_method_names = ["get", "post", "options"]
+    http_method_names = [
+        "get",
+        "post",
+        "patch",
+        "delete",
+        "options",
+    ]
 
     def get_serializer_class(self):
         """Select the serializer matching the current API action."""
@@ -53,20 +63,21 @@ class OfferViewSet(ModelViewSet):
             return OfferListSerializer
         if self.action == "retrieve":
             return OfferRetrieveSerializer
+        if self.action == "partial_update":
+            return OfferUpdateSerializer
         return OfferCreateSerializer
 
     def get_permissions(self):
         """Return permissions matching the current API action."""
         if self.action == "list":
-            permission_classes = [AllowAny]
+            classes = [AllowAny]
         elif self.action == "create":
-            permission_classes = [
-                IsAuthenticated,
-                IsBusinessUser,
-            ]
+            classes = [IsAuthenticated, IsBusinessUser]
+        elif self.action in {"partial_update", "destroy"}:
+            classes = [IsAuthenticated, IsOfferOwner]
         else:
-            permission_classes = self.permission_classes
-        return [permission() for permission in permission_classes]
+            classes = self.permission_classes
+        return [permission() for permission in classes]
 
     def perform_create(self, serializer):
         """Use the authenticated user as the offer owner."""
