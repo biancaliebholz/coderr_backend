@@ -1,7 +1,12 @@
+"""Views for the offer API endpoints."""
+
 from django.db.models import Min
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
+from offers_app.api.filters import OfferFilter
 from offers_app.api.pagination import OfferPagination
 from offers_app.api.permissions import IsBusinessUser
 from offers_app.api.serializers import (
@@ -28,6 +33,15 @@ class OfferViewSet(ModelViewSet):
     serializer_class = OfferCreateSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = OfferPagination
+    filter_backends = [
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
+    ]
+    filterset_class = OfferFilter
+    search_fields = ["title", "description"]
+    ordering_fields = ["updated_at", "min_price"]
+    ordering = ["-updated_at"]
     http_method_names = ["get", "post", "options"]
 
     def get_serializer_class(self):
@@ -41,7 +55,10 @@ class OfferViewSet(ModelViewSet):
         if self.action == "list":
             permission_classes = [AllowAny]
         elif self.action == "create":
-            permission_classes = [IsAuthenticated, IsBusinessUser]
+            permission_classes = [
+                IsAuthenticated,
+                IsBusinessUser,
+            ]
         else:
             permission_classes = self.permission_classes
         return [permission() for permission in permission_classes]

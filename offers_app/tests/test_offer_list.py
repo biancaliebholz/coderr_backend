@@ -4,6 +4,9 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from offers_app.api.serializers import (
+    OfferDetailReferenceSerializer,
+)
 from offers_app.models import Offer, OfferDetail
 from users_app.models import Profile
 
@@ -76,7 +79,10 @@ class OfferListTests(APITestCase):
     def _get_successful_response(self):
         """Request the list and verify its documented status."""
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_200_OK,
+        )
         return response
 
     def _first_result(self):
@@ -87,7 +93,12 @@ class OfferListTests(APITestCase):
     def test_offer_list_is_public_and_paginated(self):
         """Return a paginated list without authentication."""
         response = self._get_successful_response()
-        expected_keys = {"count", "next", "previous", "results"}
+        expected_keys = {
+            "count",
+            "next",
+            "previous",
+            "results",
+        }
         self.assertEqual(set(response.data), expected_keys)
         self.assertEqual(response.data["count"], 1)
 
@@ -116,4 +127,14 @@ class OfferListTests(APITestCase):
         """Represent details through their IDs and URLs."""
         result = self._first_result()
         self.assertEqual(len(result["details"]), 3)
-        self.assertEqual(set(result["details"][0]), {"id", "url"})
+        self.assertEqual(
+            set(result["details"][0]),
+            {"id", "url"},
+        )
+
+    def test_detail_reference_uses_relative_url_without_request(self):
+        """Return a relative detail URL without request context."""
+        detail = self.offer.details.first()
+        serializer = OfferDetailReferenceSerializer(detail)
+        expected_url = f"/api/offerdetails/{detail.pk}/"
+        self.assertEqual(serializer.data["url"], expected_url)
