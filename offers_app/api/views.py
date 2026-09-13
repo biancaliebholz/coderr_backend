@@ -3,6 +3,7 @@
 from django.db.models import Min
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
@@ -11,9 +12,11 @@ from offers_app.api.pagination import OfferPagination
 from offers_app.api.permissions import IsBusinessUser
 from offers_app.api.serializers import (
     OfferCreateSerializer,
+    OfferDetailSerializer,
     OfferListSerializer,
+    OfferRetrieveSerializer,
 )
-from offers_app.models import Offer
+from offers_app.models import Offer, OfferDetail
 
 
 class OfferViewSet(ModelViewSet):
@@ -48,6 +51,8 @@ class OfferViewSet(ModelViewSet):
         """Select the serializer matching the current API action."""
         if self.action == "list":
             return OfferListSerializer
+        if self.action == "retrieve":
+            return OfferRetrieveSerializer
         return OfferCreateSerializer
 
     def get_permissions(self):
@@ -66,3 +71,12 @@ class OfferViewSet(ModelViewSet):
     def perform_create(self, serializer):
         """Use the authenticated user as the offer owner."""
         serializer.save(user=self.request.user)
+
+
+class OfferDetailView(RetrieveAPIView):
+    """Return one offer package to authenticated users."""
+
+    queryset = OfferDetail.objects.select_related("offer")
+    serializer_class = OfferDetailSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "head", "options"]

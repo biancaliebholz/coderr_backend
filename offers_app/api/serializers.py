@@ -84,6 +84,44 @@ class OfferListSerializer(serializers.ModelSerializer):
         ]
 
 
+class OfferRetrieveSerializer(serializers.ModelSerializer):
+    """Serialize one offer for the detail endpoint."""
+
+    user = serializers.IntegerField(
+        source="user_id",
+        read_only=True,
+    )
+    details = OfferDetailReferenceSerializer(
+        many=True,
+        read_only=True,
+    )
+    min_price = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        read_only=True,
+        allow_null=True,
+    )
+    min_delivery_time = serializers.IntegerField(
+        read_only=True,
+        allow_null=True,
+    )
+
+    class Meta:
+        model = Offer
+        fields = [
+            "id",
+            "user",
+            "title",
+            "image",
+            "description",
+            "created_at",
+            "updated_at",
+            "details",
+            "min_price",
+            "min_delivery_time",
+        ]
+
+
 class OfferDetailSerializer(serializers.ModelSerializer):
     """Serialize one package belonging to an offer."""
 
