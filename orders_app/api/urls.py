@@ -2,7 +2,12 @@
 
 from django.urls import path
 
-from orders_app.api.views import OrderCreateView
+from orders_app.api.views import (
+    CompletedOrderCountView,
+    OrderCountView,
+    OrderDetailView,
+    OrderListCreateView,
+)
 
 
 app_name = "orders_app"
@@ -11,7 +16,22 @@ app_name = "orders_app"
 urlpatterns = [
     path(
         "orders/",
-        OrderCreateView.as_view(),
-        name="order-create",
+        OrderListCreateView.as_view(),
+        name="order-list-create",
+    ),
+    path(
+        "orders/<int:pk>/",
+        OrderDetailView.as_view(),
+        name="order-detail",
+    ),
+    path(
+        "order-count/<int:business_user_id>/",
+        OrderCountView.as_view(),
+        name="order-count",
+    ),
+    path(
+        "completed-order-count/<int:business_user_id>/",
+        CompletedOrderCountView.as_view(),
+        name="completed-order-count",
     ),
 ]

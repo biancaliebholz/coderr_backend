@@ -7,10 +7,9 @@ from offers_app.models import OfferDetail
 from orders_app.models import Order
 
 
-class OrderCreateSerializer(serializers.ModelSerializer):
-    """Create an order snapshot from an offer detail."""
+class OrderSerializer(serializers.ModelSerializer):
+    """Serialize the complete public representation of an order."""
 
-    offer_detail_id = serializers.IntegerField(write_only=True)
     price = serializers.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -21,7 +20,6 @@ class OrderCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = [
-            "offer_detail_id",
             "id",
             "customer_user",
             "business_user",
@@ -35,19 +33,18 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = [
-            "id",
-            "customer_user",
-            "business_user",
-            "title",
-            "revisions",
-            "delivery_time_in_days",
-            "price",
-            "features",
-            "offer_type",
-            "status",
-            "created_at",
-            "updated_at",
+        read_only_fields = fields
+
+
+class OrderCreateSerializer(OrderSerializer):
+    """Create an order snapshot from an offer detail."""
+
+    offer_detail_id = serializers.IntegerField(write_only=True)
+
+    class Meta(OrderSerializer.Meta):
+        fields = [
+            "offer_detail_id",
+            *OrderSerializer.Meta.fields,
         ]
 
     def validate_offer_detail_id(self, value):
@@ -75,3 +72,26 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             "features": detail.features,
             "offer_type": detail.offer_type,
         }
+
+
+class OrderStatusSerializer(OrderSerializer):
+    """Allow updates to an order's status only."""
+
+    status = serializers.ChoiceField(
+        choices=Order.Status.choices,
+    )
+
+    class Meta(OrderSerializer.Meta):
+        read_only_fields = [
+            "id",
+            "customer_user",
+            "business_user",
+            "title",
+            "revisions",
+            "delivery_time_in_days",
+            "price",
+            "features",
+            "offer_type",
+            "created_at",
+            "updated_at",
+        ]
