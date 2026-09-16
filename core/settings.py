@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "django_filters",
     "users_app.apps.UsersAppConfig",
     "offers_app.apps.OffersAppConfig",
+    "orders_app.apps.OrdersAppConfig",
 ]
 
 MIDDLEWARE = [
