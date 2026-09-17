@@ -1,5 +1,3 @@
-"""Central URL configuration for the Coderr backend."""
-
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -11,6 +9,7 @@ urlpatterns = [
     path("api/", include("users_app.api.urls")),
     path("api/", include("offers_app.api.urls")),
     path("api/", include("orders_app.api.urls")),
+    path("api/", include("reviews_app.api.urls")),
 ]
 
 
