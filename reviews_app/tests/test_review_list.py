@@ -10,6 +10,8 @@ from users_app.models import Profile
 
 
 User = get_user_model()
+CUSTOMER = Profile.UserType.CUSTOMER
+BUSINESS = Profile.UserType.BUSINESS
 
 
 REVIEW_FIELDS = {
@@ -35,10 +37,10 @@ class ReviewListTests(APITestCase):
 
     def _create_users(self):
         """Create two customers and two business users."""
-        self.reviewer_one = self._create_user("customer1", "customer")
-        self.reviewer_two = self._create_user("customer2", "customer")
-        self.business_one = self._create_user("business1", "business")
-        self.business_two = self._create_user("business2", "business")
+        self.reviewer_one = self._create_user("customer1", CUSTOMER)
+        self.reviewer_two = self._create_user("customer2", CUSTOMER)
+        self.business_one = self._create_user("business1", BUSINESS)
+        self.business_two = self._create_user("business2", BUSINESS)
 
     def _create_user(self, username, profile_type):
         """Create a user with the requested profile type."""
@@ -46,26 +48,24 @@ class ReviewListTests(APITestCase):
             username=username,
             password="S3cure-Pass!482",
         )
-        Profile.objects.create(user=user, type=profile_type)
+        Profile.objects.create(
+            user=user,
+            type=profile_type,
+        )
         return user
 
     def _create_reviews(self):
         """Create reviews with different users and ratings."""
-        self.review_one = self._create_review(
-            self.reviewer_one,
-            self.business_one,
-            3,
-        )
-        self.review_two = self._create_review(
-            self.reviewer_two,
-            self.business_one,
-            5,
-        )
-        self.review_three = self._create_review(
-            self.reviewer_one,
-            self.business_two,
-            4,
-        )
+        review_data = [
+            (self.reviewer_one, self.business_one, 3),
+            (self.reviewer_two, self.business_one, 5),
+            (self.reviewer_one, self.business_two, 4),
+        ]
+        reviews = [
+            self._create_review(*data)
+            for data in review_data
+        ]
+        self.review_one, self.review_two, self.review_three = reviews
 
     def _create_review(self, reviewer, business_user, rating):
         """Create one review for the supplied users."""
@@ -142,4 +142,3 @@ class ReviewListTests(APITestCase):
         )
         ratings = [item["rating"] for item in response.data]
         self.assertEqual(ratings, [5, 4, 3])
-    

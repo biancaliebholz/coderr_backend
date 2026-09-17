@@ -1,5 +1,3 @@
-"""Filter definitions for offer API endpoints."""
-
 import django_filters
 
 from offers_app.models import Offer

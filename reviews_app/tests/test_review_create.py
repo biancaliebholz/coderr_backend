@@ -10,6 +10,18 @@ from users_app.models import Profile
 
 
 User = get_user_model()
+CUSTOMER = Profile.UserType.CUSTOMER
+BUSINESS = Profile.UserType.BUSINESS
+
+REVIEW_FIELDS = {
+    "id",
+    "business_user",
+    "reviewer",
+    "rating",
+    "description",
+    "created_at",
+    "updated_at",
+}
 
 
 class ReviewCreateTests(APITestCase):
@@ -18,17 +30,11 @@ class ReviewCreateTests(APITestCase):
     def setUp(self):
         """Create customer and business test accounts."""
         self.url = "/api/reviews/"
-        self.customer = self._create_user(
-            "customer",
-            Profile.UserType.CUSTOMER,
-        )
-        self.business = self._create_user(
-            "business",
-            Profile.UserType.BUSINESS,
-        )
+        self.customer = self._create_user("customer", CUSTOMER)
+        self.business = self._create_user("business", BUSINESS)
         self.other_customer = self._create_user(
             "othercustomer",
-            Profile.UserType.CUSTOMER,
+            CUSTOMER,
         )
 
     def _create_user(self, username, profile_type):
@@ -38,11 +44,25 @@ class ReviewCreateTests(APITestCase):
             email=f"{username}@example.com",
             password="S3cure-Pass!482",
         )
-        Profile.objects.create(
-            user=user,
-            type=profile_type,
-        )
+        Profile.objects.create(user=user, type=profile_type)
         return user
+
+    def _create_user_without_profile(self):
+        """Create a user without an associated profile."""
+        return User.objects.create_user(
+            username="withoutprofile",
+            email="withoutprofile@example.com",
+            password="S3cure-Pass!482",
+        )
+
+    def _create_existing_review(self):
+        """Create an existing review for duplicate validation."""
+        return Review.objects.create(
+            reviewer=self.customer,
+            business_user=self.business,
+            rating=4,
+            description="First review",
+        )
 
     def _authenticate(self, user):
         """Authenticate requests with the user's token."""
@@ -59,44 +79,27 @@ class ReviewCreateTests(APITestCase):
             "description": "Everything was great!",
         }
 
+    def _post(self, data=None):
+        """Send a review creation request."""
+        payload = self._valid_data() if data is None else data
+        return self.client.post(self.url, payload, format="json")
+
     def test_customer_can_create_review(self):
         """Allow a customer to review a business user."""
         self._authenticate(self.customer)
-        response = self.client.post(
-            self.url,
-            self._valid_data(),
-            format="json",
-        )
+        response = self._post()
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        review = Review.objects.get()
-        self.assertEqual(review.reviewer, self.customer)
+        self.assertEqual(Review.objects.get().reviewer, self.customer)
 
     def test_created_review_contains_documented_fields(self):
         """Return all documented fields after creation."""
         self._authenticate(self.customer)
-        response = self.client.post(
-            self.url,
-            self._valid_data(),
-            format="json",
-        )
-        expected_fields = {
-            "id",
-            "business_user",
-            "reviewer",
-            "rating",
-            "description",
-            "created_at",
-            "updated_at",
-        }
-        self.assertEqual(set(response.data), expected_fields)
+        response = self._post()
+        self.assertEqual(set(response.data), REVIEW_FIELDS)
 
     def test_review_creation_requires_authentication(self):
         """Reject an unauthenticated review request."""
-        response = self.client.post(
-            self.url,
-            self._valid_data(),
-            format="json",
-        )
+        response = self._post()
         self.assertEqual(
             response.status_code,
             status.HTTP_401_UNAUTHORIZED,
@@ -105,11 +108,7 @@ class ReviewCreateTests(APITestCase):
     def test_business_user_cannot_create_review(self):
         """Prevent business users from writing reviews."""
         self._authenticate(self.business)
-        response = self.client.post(
-            self.url,
-            self._valid_data(),
-            format="json",
-        )
+        response = self._post()
         self.assertEqual(
             response.status_code,
             status.HTTP_403_FORBIDDEN,
@@ -117,18 +116,9 @@ class ReviewCreateTests(APITestCase):
 
     def test_duplicate_review_is_rejected(self):
         """Allow one review per customer and business pair."""
-        Review.objects.create(
-            reviewer=self.customer,
-            business_user=self.business,
-            rating=4,
-            description="First review",
-        )
+        self._create_existing_review()
         self._authenticate(self.customer)
-        response = self.client.post(
-            self.url,
-            self._valid_data(),
-            format="json",
-        )
+        response = self._post()
         self.assertEqual(
             response.status_code,
             status.HTTP_400_BAD_REQUEST,
@@ -139,11 +129,7 @@ class ReviewCreateTests(APITestCase):
         self._authenticate(self.customer)
         data = self._valid_data()
         data["business_user"] = self.other_customer.pk
-        response = self.client.post(
-            self.url,
-            data,
-            format="json",
-        )
+        response = self._post(data)
         self.assertEqual(
             response.status_code,
             status.HTTP_400_BAD_REQUEST,
@@ -154,11 +140,7 @@ class ReviewCreateTests(APITestCase):
         self._authenticate(self.customer)
         data = self._valid_data()
         data["rating"] = 6
-        response = self.client.post(
-            self.url,
-            data,
-            format="json",
-        )
+        response = self._post(data)
         self.assertEqual(
             response.status_code,
             status.HTTP_400_BAD_REQUEST,
@@ -166,18 +148,12 @@ class ReviewCreateTests(APITestCase):
 
     def test_user_without_profile_cannot_be_reviewed(self):
         """Reject a review recipient without a profile."""
-        user_without_profile = User.objects.create_user(
-            username="withoutprofile",
-            email="withoutprofile@example.com",
-            password="S3cure-Pass!482",
-        )
+        user = self._create_user_without_profile()
         self._authenticate(self.customer)
         data = self._valid_data()
-        data["business_user"] = user_without_profile.pk
-        response = self.client.post(self.url, data, format="json")
+        data["business_user"] = user.pk
+        response = self._post(data)
         self.assertEqual(
             response.status_code,
             status.HTTP_400_BAD_REQUEST,
         )
-
-

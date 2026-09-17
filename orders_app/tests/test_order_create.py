@@ -53,15 +53,18 @@ class OrderCreateTests(APITestCase):
         Profile.objects.create(user=user, type=profile_type)
         return user
 
-    def _create_offer_detail(self):
-        """Create a package that can be ordered."""
-        offer = Offer.objects.create(
+    def _create_offer(self):
+        """Create the offer used by the order tests."""
+        return Offer.objects.create(
             user=self.business,
             title="Logo Package",
             description="Professional logo design.",
         )
+
+    def _create_offer_detail(self):
+        """Create a package that can be ordered."""
         return OfferDetail.objects.create(
-            offer=offer,
+            offer=self._create_offer(),
             title="Basic Logo Design",
             revisions=3,
             delivery_time_in_days=5,

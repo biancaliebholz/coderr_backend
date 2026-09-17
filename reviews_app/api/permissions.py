@@ -1,5 +1,3 @@
-"""Custom permissions for review API endpoints."""
-
 from rest_framework.permissions import BasePermission
 
 from users_app.models import Profile

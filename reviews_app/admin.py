@@ -1,5 +1,3 @@
-"""Admin configuration for review models."""
-
 from django.contrib import admin
 
 from reviews_app.models import Review

@@ -1,5 +1,3 @@
-"""Database models for the review domain."""
-
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models

@@ -1,5 +1,3 @@
-"""Views for the offer API endpoints."""
-
 from django.db.models import Min
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter, SearchFilter

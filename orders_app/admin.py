@@ -1,5 +1,3 @@
-"""Django admin configuration for orders."""
-
 from django.contrib import admin
 
 from orders_app.models import Order

@@ -1,5 +1,3 @@
-"""Custom permissions for the orders API."""
-
 from rest_framework.permissions import BasePermission
 
 from users_app.models import Profile

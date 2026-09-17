@@ -1,5 +1,3 @@
-"""Filters for review API endpoints."""
-
 import django_filters
 
 from reviews_app.models import Review

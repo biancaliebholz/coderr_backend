@@ -10,6 +10,8 @@ from users_app.models import Profile
 
 
 User = get_user_model()
+CUSTOMER = Profile.UserType.CUSTOMER
+BUSINESS = Profile.UserType.BUSINESS
 
 
 class ReviewUpdateDeleteTests(APITestCase):
@@ -17,18 +19,12 @@ class ReviewUpdateDeleteTests(APITestCase):
 
     def setUp(self):
         """Create users and one existing review."""
-        self.reviewer = self._create_user(
-            "reviewer",
-            Profile.UserType.CUSTOMER,
-        )
+        self.reviewer = self._create_user("reviewer", CUSTOMER)
         self.other_customer = self._create_user(
             "othercustomer",
-            Profile.UserType.CUSTOMER,
+            CUSTOMER,
         )
-        self.business = self._create_user(
-            "business",
-            Profile.UserType.BUSINESS,
-        )
+        self.business = self._create_user("business", BUSINESS)
         self.review = self._create_review()
         self.url = f"/api/reviews/{self.review.pk}/"
 
