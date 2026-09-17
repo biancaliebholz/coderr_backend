@@ -1,16 +1,30 @@
-# Coderr Backend
+<h1 align="center">Coderr Backend</h1>
 
-Coderr Backend is a REST API for a service marketplace where business users can offer services and customers can order and review them.
+<p align="center">
+  <strong>REST API for a service marketplace built with Django and Django REST Framework</strong>
+</p>
 
-The backend is built with Django and Django REST Framework. It provides token-based authentication, user profiles, offers, orders, reviews, image uploads, filtering, pagination, permissions, and aggregated platform statistics.
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.14-0F172A?style=flat-square&logo=python&logoColor=FF9800" alt="Python 3.14">
+  <img src="https://img.shields.io/badge/Django-5.2-0F172A?style=flat-square&logo=django&logoColor=FF9800" alt="Django 5.2">
+  <img src="https://img.shields.io/badge/Django_REST_Framework-3.18-0F172A?style=flat-square" alt="Django REST Framework 3.18">
+  <img src="https://img.shields.io/badge/Tests-153_passing-0F172A?style=flat-square&labelColor=FF9800" alt="153 passing tests">
+  <img src="https://img.shields.io/badge/Coverage-100%25-0F172A?style=flat-square&labelColor=FF9800" alt="100 percent coverage">
+</p>
+
+---
+
+Coderr Backend is a REST API for a service marketplace where business users can publish service offers and customers can order and review those services.
+
+The API provides token-based authentication, user profiles, offers with different service packages, orders, reviews, image uploads, filtering, pagination, permissions, and aggregated platform statistics.
 
 ## Table of Contents
 
 - [Technologies](#technologies)
 - [Quick Start](#quick-start)
-- [Step-by-Step Installation](#step-by-step-installation)
+- [Detailed Installation](#detailed-installation)
 - [Authentication](#authentication)
-- [API Endpoints](#api-endpoints)
+- [API Structure](#api-structure)
 - [Permissions](#permissions)
 - [Testing](#testing)
 - [Admin Interface](#admin-interface)
@@ -21,7 +35,7 @@ The backend is built with Django and Django REST Framework. It provides token-ba
 
 - Python 3.14
 - Django 5.2
-- Django REST Framework
+- Django REST Framework 3.18
 - DRF Token Authentication
 - django-filter
 - Pillow
@@ -29,9 +43,13 @@ The backend is built with Django and Django REST Framework. It provides token-ba
 - SQLite
 - Coverage.py
 
+All required Python packages and their exact versions are listed in `requirements.txt`.
+
 ## Quick Start
 
-The following commands provide a compact setup for macOS and Linux:
+The Quick Start is intended for developers who already have Python and Git installed and are familiar with virtual environments.
+
+### macOS or Linux
 
 ```bash
 git clone https://github.com/biancaliebholz/coderr_backend.git
@@ -44,13 +62,7 @@ python3 manage.py migrate
 python3 manage.py runserver
 ```
 
-Before starting the server, replace the placeholder `SECRET_KEY` inside `.env` with a generated Django secret key.
-
-Generate one with:
-
-```bash
-python3 -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
-```
+Before using the project outside local development, replace the placeholder `SECRET_KEY` inside `.env` with a securely generated key.
 
 The API is then available at:
 
@@ -58,9 +70,7 @@ The API is then available at:
 http://127.0.0.1:8000/api/
 ```
 
-For a platform-specific explanation, follow the detailed installation below.
-
-## Step-by-Step Installation
+## Detailed Installation
 
 ### 1. Clone the repository
 
@@ -70,6 +80,8 @@ cd coderr_backend
 ```
 
 ### 2. Create a virtual environment
+
+The virtual environment keeps the dependencies of this project separate from other Python projects.
 
 ```bash
 python3 -m venv .venv
@@ -89,11 +101,15 @@ Windows PowerShell:
 .venv\Scripts\Activate.ps1
 ```
 
+After activation, the terminal prompt should begin with `(.venv)`.
+
 ### 4. Install the dependencies
 
 ```bash
 python3 -m pip install -r requirements.txt
 ```
+
+The `requirements.txt` file contains the packages required to run and test the project. The local `.venv` directory itself is not included in the repository.
 
 ### 5. Create the environment file
 
@@ -103,10 +119,10 @@ macOS or Linux:
 cp .env.example .env
 ```
 
-Windows:
+Windows PowerShell:
 
 ```powershell
-copy .env.example .env
+Copy-Item .env.example .env
 ```
 
 Generate a Django secret key:
@@ -115,13 +131,13 @@ Generate a Django secret key:
 python3 -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
-Replace the placeholder inside `.env` with the generated value:
+Copy the generated value into `.env`:
 
 ```env
 SECRET_KEY=your-generated-secret-key
 ```
 
-The local `.env` file must not be committed to version control.
+The `.env` file contains local configuration values and is excluded from version control.
 
 ### 6. Apply the database migrations
 
@@ -129,13 +145,27 @@ The local `.env` file must not be committed to version control.
 python3 manage.py migrate
 ```
 
-### 7. Start the development server
+This creates the local SQLite database and its required tables.
+
+### 7. Check the Django configuration
+
+```bash
+python3 manage.py check
+```
+
+Expected result:
+
+```text
+System check identified no issues (0 silenced).
+```
+
+### 8. Start the development server
 
 ```bash
 python3 manage.py runserver
 ```
 
-The API endpoints use the following base URL:
+The API is available at:
 
 ```text
 http://127.0.0.1:8000/api/
@@ -147,6 +177,8 @@ The Django admin interface is available at:
 http://127.0.0.1:8000/admin/
 ```
 
+Stop the server with `Control + C`.
+
 ## Authentication
 
 The API uses Django REST Framework Token Authentication.
@@ -157,59 +189,64 @@ A token is returned after successful registration or login. Protected requests m
 Authorization: Token <your-token>
 ```
 
-Registration and login are public. Other endpoints require authentication unless they are explicitly documented as public.
+Registration and login are public. Other endpoints require authentication unless they are explicitly intended to be publicly accessible.
 
-## API Endpoints
+The available user roles are:
+
+- `customer`
+- `business`
+
+These roles determine which resources a user may create or modify.
+
+## API Structure
+
+All API routes use the `/api/` prefix.
 
 ### Authentication and Profiles
 
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/api/registration/` | Register a customer or business user |
-| POST | `/api/login/` | Authenticate a user and return a token |
-| GET | `/api/profile/{id}/` | Retrieve a user profile |
-| PATCH | `/api/profile/{id}/` | Update the authenticated user's profile |
-| GET | `/api/profiles/business/` | List all business profiles |
-| GET | `/api/profiles/customer/` | List all customer profiles |
+The users domain provides:
+
+- User registration
+- User login
+- Token generation
+- Individual profile retrieval
+- Profile updates
+- Business profile lists
+- Customer profile lists
+- Profile image uploads
 
 ### Offers
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/offers/` | List, filter, search, order, and paginate offers |
-| POST | `/api/offers/` | Create an offer with its package details |
-| GET | `/api/offers/{id}/` | Retrieve a specific offer |
-| PATCH | `/api/offers/{id}/` | Partially update an owned offer |
-| DELETE | `/api/offers/{id}/` | Delete an owned offer |
-| GET | `/api/offerdetails/{id}/` | Retrieve a specific offer package |
+The offers domain provides:
 
-Each offer contains three package types:
+- Public offer lists
+- Offer creation for business users
+- Individual offer retrieval
+- Offer updates
+- Offer deletion
+- Individual offer package retrieval
+- Search, filtering, ordering, and pagination
+
+Each offer contains three service packages:
 
 - `basic`
 - `standard`
 - `premium`
 
-The offer list supports:
-
-- Filtering by creator
-- Filtering by minimum price
-- Filtering by maximum delivery time
-- Searching by title and description
-- Ordering by update time or minimum price
-- Configurable page size
+Each package can define its own price, delivery time, number of revisions, and included features.
 
 ### Orders
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/orders/` | List orders related to the authenticated user |
-| POST | `/api/orders/` | Create an order from an offer package |
-| PATCH | `/api/orders/{id}/` | Update an order status |
-| DELETE | `/api/orders/{id}/` | Delete an order as a staff user |
-| GET | `/api/order-count/{business_user_id}/` | Count in-progress orders |
-| GET | `/api/completed-order-count/{business_user_id}/` | Count completed orders |
+The orders domain provides:
 
-Order data is stored as a snapshot of the selected offer package. Later changes to an offer therefore do not alter an existing order.
+- Order creation from a selected offer package
+- User-specific order lists
+- Order status updates
+- Administrative order deletion
+- In-progress order counts
+- Completed order counts
+
+Order data is stored as a snapshot of the selected offer package. Later changes to the original offer therefore do not modify existing orders.
 
 Supported order statuses are:
 
@@ -219,29 +256,21 @@ Supported order statuses are:
 
 ### Reviews
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/reviews/` | List, filter, and order reviews |
-| POST | `/api/reviews/` | Create a review for a business user |
-| PATCH | `/api/reviews/{id}/` | Update an owned review |
-| DELETE | `/api/reviews/{id}/` | Delete an owned review |
+The reviews domain provides:
 
-Reviews can be:
-
-- Filtered by business user
-- Filtered by reviewer
-- Ordered by rating
-- Ordered by update time
+- Review lists
+- Review creation
+- Review updates
+- Review deletion
+- Filtering by business user
+- Filtering by reviewer
+- Ordering by rating or update time
 
 A customer can review the same business user only once.
 
 ### Platform Information
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/base-info/` | Return public aggregated platform statistics |
-
-The response contains:
+The base-info endpoint provides aggregated public statistics:
 
 - Number of reviews
 - Average rating
@@ -250,19 +279,19 @@ The response contains:
 
 ## Permissions
 
-The API uses role-based and object-level permissions:
+The API uses role-based and object-level permissions.
 
 - Anyone can register or log in.
-- The offer list and platform statistics are public.
-- Profile lists and individual profiles require authentication.
+- Offer lists and platform statistics are public.
+- Protected resources require a valid authentication token.
 - Only a profile owner may update their profile.
 - Only business users may create offers.
-- Only the offer owner may update or delete an offer.
+- Only the owner of an offer may update or delete it.
 - Only customer users may create orders.
 - Only the assigned business user may update an order status.
 - Only staff users may delete orders.
 - Only customer users may create reviews.
-- Only the review author may update or delete a review.
+- Only the author of a review may update or delete it.
 
 ## Testing
 
@@ -271,6 +300,8 @@ Run the complete test suite:
 ```bash
 python3 manage.py test
 ```
+
+The current project contains 153 automated tests.
 
 Check the Django configuration:
 
@@ -284,16 +315,23 @@ Check whether model changes are missing migrations:
 python3 manage.py makemigrations --check --dry-run
 ```
 
-Check the changes for whitespace errors:
+Check changed files for whitespace errors:
 
 ```bash
 git diff --check
 ```
 
-Run the complete test suite with coverage:
+### Test Coverage
+
+Clear previously collected coverage data:
 
 ```bash
 python3 -m coverage erase
+```
+
+Run the complete test suite with coverage:
+
+```bash
 python3 -m coverage run \
   --source=users_app,offers_app,orders_app,reviews_app,base_info_app \
   manage.py test
@@ -306,9 +344,11 @@ python3 -m coverage report -m \
   --omit="*/migrations/*,*/tests/*"
 ```
 
-The project currently contains 153 automated tests and reaches 100% coverage for the application code.
+The current test suite reaches 100% coverage for the application code. Migration files and test files are excluded from the coverage calculation.
 
 ## Admin Interface
+
+Django includes a separate administration interface for managing application data.
 
 Create an administrator account:
 
@@ -316,19 +356,23 @@ Create an administrator account:
 python3 manage.py createsuperuser
 ```
 
+Follow the prompts to enter a username, email address, and password.
+
 Start the development server:
 
 ```bash
 python3 manage.py runserver
 ```
 
-Open the admin interface:
+Open the following address in a browser:
 
 ```text
 http://127.0.0.1:8000/admin/
 ```
 
-The main project models are registered and manageable through the Django admin interface.
+Log in with the superuser credentials created previously.
+
+The admin interface is intended for internal administration. It allows authorized staff to inspect and manage users, profiles, offers, offer packages, orders, reviews, and authentication tokens. It is separate from the customer-facing frontend.
 
 ## Project Structure
 
@@ -365,20 +409,26 @@ coderr_backend/
 └── README.md
 ```
 
-Each domain app contains its API-specific serializers, views, URLs, permissions, filters, pagination, and tests where required.
+Each domain app organizes its API-specific serializers, views, URLs, permissions, and tests according to its responsibilities.
+
+Filtering and pagination are implemented only for endpoints that require them. The `base_info_app` does not contain a database model because it calculates aggregated information from the other domain models.
 
 ## Important Notes
 
 - A custom user model based on Django's `AbstractUser` is used.
 - Additional user information is stored in a one-to-one profile model.
-- Every user has either a `customer` or `business` profile.
+- Every regular user has either a `customer` or `business` profile.
+- Token Authentication is used for protected API requests.
 - Profile and offer images are processed with Pillow.
-- Uploaded images are stored inside the local `media/` directory.
+- Uploaded files are stored inside the local `media/` directory.
 - The secret key is loaded from a local `.env` file.
 - The `.env` file is excluded from version control.
+- The `.venv` directory is excluded from version control.
 - The local SQLite database is excluded from version control.
 - Uploaded media and coverage files are excluded from version control.
 - The frontend is maintained separately and is not included in this repository.
 - SQLite is used for local development.
+- A production deployment should use a production-ready database such as PostgreSQL.
 - `DEBUG` is enabled for local development and must be disabled before production deployment.
-- This project is intended for development and educational purposes.
+- The test and coverage badges represent the current project state and must be updated if these values change.
+- This project was developed for educational purposes.
