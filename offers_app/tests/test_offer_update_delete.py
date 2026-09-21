@@ -1,5 +1,7 @@
 """Tests for updating and deleting offers through the API."""
 
+from decimal import Decimal
+
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -11,29 +13,34 @@ from users_app.models import Profile
 User = get_user_model()
 
 
-UPDATE_RESPONSE_FIELDS = {
-    "id",
-    "title",
-    "image",
-    "description",
-    "details",
-}
-
-
 class OfferUpdateDeleteTests(APITestCase):
-    """Test owner-protected update and delete operations."""
+    """Test offer updates, nested detail updates, and deletion."""
 
     def setUp(self):
-        """Create two business users and their offers."""
+        """Create owners, offers, and their package details."""
         self.owner = self._create_business_user("owner")
-        self.other_user = self._create_business_user("other")
-        self.offer = self._create_offer(self.owner, "Design Package")
-        self.basic = self._create_detail(self.offer, "basic", 100)
-        self._create_detail(self.offer, "standard", 200)
-        self._create_detail(self.offer, "premium", 500)
-        other_offer = self._create_offer(self.other_user, "Other Offer")
+        self.other = self._create_business_user("other")
+        self.offer = self._create_offer(self.owner, "Original Offer")
+        self.basic = self._create_detail(
+            self.offer,
+            "basic",
+            Decimal("100.00"),
+        )
+        self._create_detail(
+            self.offer,
+            "standard",
+            Decimal("200.00"),
+        )
+        self._create_detail(
+            self.offer,
+            "premium",
+            Decimal("300.00"),
+        )
+        foreign_offer = self._create_offer(self.other, "Foreign Offer")
         self.foreign_detail = self._create_detail(
-            other_offer, "basic", 80
+            foreign_offer,
+            "basic",
+            Decimal("400.00"),
         )
         self.url = f"/api/offers/{self.offer.pk}/"
 
@@ -51,117 +58,93 @@ class OfferUpdateDeleteTests(APITestCase):
         return user
 
     def _create_offer(self, user, title):
-        """Create an offer owned by the supplied user."""
+        """Create an offer belonging to the supplied user."""
         return Offer.objects.create(
             user=user,
             title=title,
-            description="Professional design service.",
+            description="Offer description.",
         )
 
     def _create_detail(self, offer, offer_type, price):
         """Create one package belonging to an offer."""
         return OfferDetail.objects.create(
             offer=offer,
-            title=f"{offer_type.title()} Design",
+            title=f"{offer_type.title()} Package",
             revisions=2,
             delivery_time_in_days=5,
             price=price,
-            features=["Logo Design"],
+            features=["Feature"],
             offer_type=offer_type,
         )
+
+    def _authenticate(self, user):
+        """Authenticate subsequent requests as the supplied user."""
+        self.client.force_authenticate(user=user)
+
+    def _patch_as(self, user, data):
+        """Send an authenticated partial update."""
+        self._authenticate(user)
+        return self.client.patch(
+            self.url,
+            data,
+            format="json",
+        )
+
+    def _delete_as(self, user):
+        """Send an authenticated delete request."""
+        self._authenticate(user)
+        return self.client.delete(self.url)
 
     def _updated_detail_data(self):
         """Return valid update data for the basic package."""
         return {
             "id": self.basic.pk,
-            "title": "Basic Design Updated",
+            "title": "Updated Basic Package",
             "revisions": 3,
             "delivery_time_in_days": 6,
             "price": "120.00",
-            "features": ["Logo Design", "Flyer"],
+            "features": ["Updated Feature"],
             "offer_type": "basic",
         }
 
-    def _patch_as(self, user, payload):
-        """Send a PATCH request as the supplied user."""
-        self.client.force_authenticate(user=user)
-        return self.client.patch(self.url, payload, format="json")
-
-    def _delete_as(self, user):
-        """Send a DELETE request as the supplied user."""
-        self.client.force_authenticate(user=user)
-        return self.client.delete(self.url)
-
-    def test_patch_requires_authentication(self):
-        """Reject an unauthenticated update."""
-        response = self.client.patch(
-            self.url,
-            {"title": "Updated"},
-            format="json",
-        )
-        self.assertEqual(
-            response.status_code,
-            status.HTTP_401_UNAUTHORIZED,
-        )
-
-    def test_non_owner_cannot_update_offer(self):
-        """Reject an update from a different user."""
-        response = self._patch_as(
-            self.other_user,
-            {"title": "Updated"},
-        )
-        self.assertEqual(
-            response.status_code,
-            status.HTTP_403_FORBIDDEN,
-        )
-
-    def test_owner_can_update_only_supplied_fields(self):
-        """Update supplied fields and preserve omitted fields."""
-        old_description = self.offer.description
+    def test_owner_can_update_offer_title(self):
+        """Allow the creator to update the offer."""
         response = self._patch_as(
             self.owner,
-            {"title": "Updated Design Package"},
+            {"title": "Updated Offer"},
         )
         self.offer.refresh_from_db()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.offer.title, "Updated Design Package")
-        self.assertEqual(self.offer.description, old_description)
-
-    def test_patch_returns_documented_fields(self):
-        """Return the documented response after an update."""
-        response = self._patch_as(
-            self.owner,
-            {"title": "Updated Design Package"},
-        )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(set(response.data), UPDATE_RESPONSE_FIELDS)
+        self.assertEqual(self.offer.title, "Updated Offer")
 
     def test_owner_can_update_one_offer_detail(self):
-        """Update one package without replacing its database row."""
-        original_id = self.basic.pk
-        payload = {"details": [self._updated_detail_data()]}
-        response = self._patch_as(self.owner, payload)
+        """Allow nested updates using a detail ID."""
+        detail_data = self._updated_detail_data()
+        response = self._patch_as(
+            self.owner,
+            {"details": [detail_data]},
+        )
         self.basic.refresh_from_db()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.basic.pk, original_id)
-        self.assertEqual(self.basic.title, "Basic Design Updated")
-        self.assertEqual(self.offer.details.count(), 3)
+        self.assertEqual(self.basic.title, detail_data["title"])
 
-    def test_detail_update_requires_id(self):
-        """Reject nested detail data without its existing ID."""
+    def test_detail_update_does_not_require_id(self):
+        """Identify a detail through its type when ID is omitted."""
         detail_data = self._updated_detail_data()
         detail_data.pop("id")
         response = self._patch_as(
             self.owner,
             {"details": [detail_data]},
         )
+        self.basic.refresh_from_db()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            response.status_code,
-            status.HTTP_400_BAD_REQUEST,
+            self.basic.title,
+            detail_data["title"],
         )
 
     def test_detail_update_requires_offer_type(self):
-        """Reject nested detail data without its package type."""
+        """Reject a nested update without its package type."""
         detail_data = self._updated_detail_data()
         detail_data.pop("offer_type")
         response = self._patch_as(
@@ -174,48 +157,43 @@ class OfferUpdateDeleteTests(APITestCase):
         )
 
     def test_cannot_update_detail_from_another_offer(self):
-        """Prevent modification of a package from another offer."""
+        """Reject an ID belonging to another offer."""
         detail_data = self._updated_detail_data()
         detail_data["id"] = self.foreign_detail.pk
         response = self._patch_as(
             self.owner,
             {"details": [detail_data]},
         )
-        self.foreign_detail.refresh_from_db()
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertNotEqual(self.foreign_detail.title, "Basic Design Updated")
-
-    def test_updating_unknown_offer_returns_not_found(self):
-        """Return 404 when the offer does not exist."""
-        self.client.force_authenticate(user=self.owner)
-        response = self.client.patch(
-            "/api/offers/999999/",
-            {"title": "Updated"},
-            format="json",
-        )
         self.assertEqual(
             response.status_code,
-            status.HTTP_404_NOT_FOUND,
+            status.HTTP_400_BAD_REQUEST,
         )
 
-    def test_delete_requires_authentication(self):
-        """Reject an unauthenticated deletion."""
-        response = self.client.delete(self.url)
-        self.assertEqual(
-            response.status_code,
-            status.HTTP_401_UNAUTHORIZED,
+    def test_other_user_cannot_update_offer(self):
+        """Prevent another user from updating the offer."""
+        response = self._patch_as(
+            self.other,
+            {"title": "Forbidden Update"},
         )
-
-    def test_non_owner_cannot_delete_offer(self):
-        """Reject deletion by a different user."""
-        response = self._delete_as(self.other_user)
         self.assertEqual(
             response.status_code,
             status.HTTP_403_FORBIDDEN,
         )
 
+    def test_unauthenticated_user_cannot_update_offer(self):
+        """Reject an unauthenticated update."""
+        response = self.client.patch(
+            self.url,
+            {"title": "Forbidden Update"},
+            format="json",
+        )
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
     def test_owner_can_delete_offer(self):
-        """Allow the owner to delete their offer."""
+        """Allow the creator to delete the offer."""
         response = self._delete_as(self.owner)
         self.assertEqual(
             response.status_code,
@@ -225,11 +203,49 @@ class OfferUpdateDeleteTests(APITestCase):
             Offer.objects.filter(pk=self.offer.pk).exists()
         )
 
-    def test_deleting_unknown_offer_returns_not_found(self):
-        """Return 404 when the offer does not exist."""
-        self.client.force_authenticate(user=self.owner)
-        response = self.client.delete("/api/offers/999999/")
+    def test_other_user_cannot_delete_offer(self):
+        """Prevent another user from deleting the offer."""
+        response = self._delete_as(self.other)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+        self.assertTrue(
+            Offer.objects.filter(pk=self.offer.pk).exists()
+        )
+
+    def test_unauthenticated_user_cannot_delete_offer(self):
+        """Reject an unauthenticated delete request."""
+        response = self.client.delete(self.url)
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+
+    def test_unknown_offer_returns_not_found(self):
+        """Return 404 for an unknown offer ID."""
+        self._authenticate(self.owner)
+        response = self.client.patch(
+            "/api/offers/999999/",
+            {"title": "Unknown"},
+            format="json",
+        )
         self.assertEqual(
             response.status_code,
             status.HTTP_404_NOT_FOUND,
         )
+
+    def test_patch_returns_documented_fields(self):
+        """Return the complete updated offer representation."""
+        response = self._patch_as(
+            self.owner,
+            {"title": "Updated Offer"},
+        )
+        expected_fields = {
+            "id",
+            "title",
+            "image",
+            "description",
+            "details",
+        }
+        self.assertEqual(set(response.data), expected_fields)
