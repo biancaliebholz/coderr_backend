@@ -61,8 +61,16 @@ cd coderr_backend
 
 ### 2. Create a virtual environment
 
+**macOS / Linux:**
+
 ```bash
 python3 -m venv .venv
+```
+
+**Windows:**
+
+```powershell
+py -3.14 -m venv .venv
 ```
 
 Activate it on macOS or Linux:
@@ -71,32 +79,64 @@ Activate it on macOS or Linux:
 source .venv/bin/activate
 ```
 
-Activate it on Windows:
+Activate it on Windows (PowerShell):
 
-```bash
-.venv\Scripts\activate
+```powershell
+.\.venv\Scripts\Activate.ps1
 ```
 
-On Windows, use `python` instead of `python3` if required.
+Activate it on Windows (Command Prompt / CMD):
+
+```bat
+.venv\Scripts\activate.bat
+```
+
+On Windows, use `python` instead of `python3` for the following commands. If PowerShell blocks script activation, use Command Prompt.
 
 ### 3. Install the dependencies
+
+**macOS / Linux:**
 
 ```bash
 python3 -m pip install -r requirements.txt
 ```
 
+**Windows:**
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
 ### 4. Configure the environment
 
-Create the local environment file:
+Create the local environment file.
+
+**macOS / Linux:**
 
 ```bash
 cp .env.example .env
 ```
 
-Generate a Django secret key:
+**Windows (PowerShell):**
+
+```powershell
+Copy-Item .env.example .env
+```
+
+On Windows CMD, use `copy .env.example .env`.
+
+Generate a Django secret key.
+
+**macOS / Linux:**
 
 ```bash
 python3 -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+```
+
+**Windows:**
+
+```powershell
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
 Add the generated value to `.env`:
@@ -107,14 +147,30 @@ SECRET_KEY=your-generated-secret-key
 
 ### 5. Apply the migrations
 
+**macOS / Linux:**
+
 ```bash
 python3 manage.py migrate
 ```
 
+**Windows:**
+
+```powershell
+python manage.py migrate
+```
+
 ### 6. Start the development server
+
+**macOS / Linux:**
 
 ```bash
 python3 manage.py runserver
+```
+
+**Windows:**
+
+```powershell
+python manage.py runserver
 ```
 
 The API is available at:
@@ -157,25 +213,51 @@ Protected endpoints require authentication. Access to offers, orders and reviews
 
 ## Testing
 
-Run the complete test suite:
+Run the complete test suite.
+
+**macOS / Linux:**
 
 ```bash
 python3 manage.py test
 ```
 
-Check the Django configuration:
+**Windows:**
+
+```powershell
+python manage.py test
+```
+
+Check the Django configuration.
+
+**macOS / Linux:**
 
 ```bash
 python3 manage.py check
 ```
 
-Verify that no migrations are missing:
+**Windows:**
+
+```powershell
+python manage.py check
+```
+
+Verify that no migrations are missing.
+
+**macOS / Linux:**
 
 ```bash
 python3 manage.py makemigrations --check --dry-run
 ```
 
-Run the tests with coverage:
+**Windows:**
+
+```powershell
+python manage.py makemigrations --check --dry-run
+```
+
+Run the tests with coverage.
+
+**macOS / Linux:**
 
 ```bash
 python3 -m coverage erase
@@ -186,14 +268,30 @@ python3 -m coverage report -m \
   --omit="*/migrations/*,*/tests/*"
 ```
 
+**Windows (PowerShell / CMD):**
+
+```powershell
+python -m coverage erase
+python -m coverage run --source=users_app,offers_app,orders_app,reviews_app,base_info_app manage.py test
+python -m coverage report -m --omit="*/migrations/*,*/tests/*"
+```
+
 The current test suite contains 153 tests and reaches 100% application-code coverage.
 
 ## Admin Interface
 
-Create an administrator account:
+Create an administrator account.
+
+**macOS / Linux:**
 
 ```bash
 python3 manage.py createsuperuser
+```
+
+**Windows:**
+
+```powershell
+python manage.py createsuperuser
 ```
 
 Start the development server and open:
@@ -236,4 +334,5 @@ Each domain app contains the API modules and tests required for its responsibili
 - The frontend is maintained separately and is not included in this repository.
 - SQLite is used for local development. A production deployment should use a production-ready database such as PostgreSQL.
 - The local database, virtual environment, environment variables, uploaded media and coverage files are excluded from version control.
+- Windows setup instructions are provided but have not been independently tested.
 - This project was created for educational purposes.
