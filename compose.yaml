@@ -7,6 +7,6 @@ services:
       - "127.0.0.1:8000:8000"
     volumes:
       - ./db.sqlite3:/app/db.sqlite3
-      - ./media:/app/media
-      - ./staticfiles:/app/staticfiles
+      - ${MEDIA_PATH:-./media}:/app/media
+      - ${STATIC_PATH:-./staticfiles}:/app/staticfiles
     restart: unless-stopped
