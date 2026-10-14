@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.validators import MinValueValidator
 from django.db import models
 
 
@@ -40,7 +41,9 @@ class OfferDetail(models.Model):
         related_name="details",
     )
     title = models.CharField(max_length=255)
-    revisions = models.PositiveIntegerField()
+    revisions = models.IntegerField(
+        validators=[MinValueValidator(-1)]
+   )
     delivery_time_in_days = models.PositiveIntegerField()
     price = models.DecimalField(
         max_digits=10,
